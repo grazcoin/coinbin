@@ -1,5 +1,7 @@
 $(document).ready(function() {
 
+        var localinsight="192.168.2.12:3001"
+
 	/* open wallet code */
 
 	$("#openBtn").click(function(){
@@ -683,6 +685,8 @@ $(document).ready(function() {
 
 		if(host=='blockr.io_bitcoinmainnet'){
 			listUnspentBlockrio_BitcoinMainnet(redeem);
+		} else if(host=='localinsight'){
+			listUnspentLocalInsight_BitcoinMainnet(redeem);
 		} else if(host=='chain.so_litecoin'){
 			listUnspentChainso_Litecoin(redeem);
 		}  else if(host=='chain.so_dogecoin'){
@@ -843,6 +847,40 @@ $(document).ready(function() {
 			}
 		});
 	}
+
+
+	/* retrieve unspent data from local insight-ui mainnet */
+	function listUnspentLocalInsight_BitcoinMainnet(redeem){
+		$.ajax ({
+			type: "GET",
+			url: "http://"+localinsight+"/insight-api/addr/"+redeem.addr+"/utxo",
+			dataType: "json",
+			error: function(data) {
+				$("#redeemFromStatus").removeClass('hidden').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unexpected error, unable to retrieve unspent outputs!');
+			},
+			success: function(data) {
+				if(data){
+					$("#redeemFromAddress").removeClass('hidden').html('<span class="glyphicon glyphicon-info-sign"></span> Retrieved unspent inputs from address <a href="http://'+localinsight+'/insight/address/'+redeem.addr+'" target="_blank">'+redeem.addr+'</a>');
+					for(var i in data){
+						var o = data[i];
+						var tx = o.txid;
+						var n = o.vout;
+						var script = (redeem.isMultisig==true) ? $("#redeemFrom").val() : o.scriptPubkey;
+						var amount = o.amount;
+						addOutput(tx, n, script, amount);
+					}
+				} else {
+					$("#redeemFromStatus").removeClass('hidden').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unexpected error, unable to retrieve unspent outputs.');
+				}
+			},
+			complete: function(data, status) {
+				$("#redeemFromBtn").html("Load").attr('disabled',false);
+				totalInputAmount();
+			}
+		});
+	}
+
+
 
 	/* retrieve unspent data from blockrio for litecoin */
 	function listUnspentChainso_Litecoin(redeem){
